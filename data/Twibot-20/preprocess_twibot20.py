@@ -23,7 +23,8 @@ def split_user_from_node():
             object_iter = ijson.items(f, 'item')
             with open(save_path, 'w') as f2:
                 for object in tqdm(object_iter):
-                    if object['id'].startswith('u'):
+                    # if object['id'].startswith('u'):
+                    if 'id' in object and object['id'].startswith('u'):
                         user_list.append(object)
                     else:
                         continue
@@ -33,6 +34,7 @@ def split_user_from_node():
 
 def generate_global_index():
     user_df = pd.read_json(r"./raw/user.json")
+    print('user_df:',user_df.head())
     user_idx = user_df['id']
     uid2index = {uid: index for index, uid in enumerate(user_idx.values)}
     with open("./processed_data/uid2global_index.pkl", "wb") as tf:
@@ -107,8 +109,11 @@ def generate_position_information_for_all_snapshot():
     edge_index_dir_path = r"./graph_data/edge_index"
     global_index_dir_path = r"./graph_data/global_index/"
     clustering_coefficient_dir_path = r"./graph_data/position_encoding/clustering_coefficient"
+    betweenness_centrality_dir_path = r"./graph_data/position_encoding/betweenness_centrality"
     if not os.path.exists(clustering_coefficient_dir_path):
         os.makedirs(clustering_coefficient_dir_path)
+    if not os.path.exists(clustering_coefficient_dir_path):
+        os.makedirs(betweenness_centrality_dir_path)
     bidirectional_links_ratio_dir_path = r"./graph_data/position_encoding/bidirectional_links_ratio"
     if not os.path.exists(bidirectional_links_ratio_dir_path):
         os.makedirs(bidirectional_links_ratio_dir_path)
@@ -126,10 +131,22 @@ def generate_position_information_for_all_snapshot():
             file_name = file.replace('edge_index', 'clustering_coefficient')
             file_path = os.path.join(clustering_coefficient_dir_path, file_name)
             torch.save(clustering_coefficient, file_path)
+
+            # G = nx.Graph()
+            # G.add_nodes_from(node.tolist())
+            # G.add_edges_from(edge_index)
+            betweenness_centrality = nx.betweenness_centrality(G)
+            betweenness_centrality = torch.FloatTensor(list(betweenness_centrality.values()))
+            assert betweenness_centrality.shape[0] == node.shape[0]
+            file_name = file.replace('edge_index', 'betweenness_centrality')
+            file_path = os.path.join(betweenness_centrality_dir_path, file_name)
+            torch.save(betweenness_centrality, file_path)
+
             edge_type = torch.load(os.path.join(root.replace('edge_index', 'edge_type'), file.replace('edge_index', 'edge_type')))
             edge_index = torch.load(os.path.join(root, file))
             edge_index = edge_index.t()
             edge_index_following = edge_index[torch.where(edge_type == 0)]
+
             G = nx.DiGraph()
             G.add_nodes_from(node.tolist())
             G.add_edges_from(edge_index_following.tolist())
@@ -156,6 +173,7 @@ def generate_pyg_graph_for_all_snapshot():
     graph_dir_path = r"./graph_data/graphs"
     global_index_dir_path = r"./graph_data/global_index"
     clustering_coefficient_dir_path = r"./graph_data/position_encoding/clustering_coefficient"
+    betweenness_centrality_dir_path = r"./graph_data/position_encoding/betweenness_centrality"
     bidirectional_links_ratio_dir_path = r"./graph_data/position_encoding/bidirectional_links_ratio"
     edge_type_dir_path = r"./graph_data/edge_type"
     if not os.path.exists(graph_dir_path):
@@ -169,6 +187,10 @@ def generate_pyg_graph_for_all_snapshot():
             global_index = torch.load(os.path.join(global_index_dir_path, file.replace('edge_index', 'global_index')))
             clustering_coefficient = torch.zeros(229580)
             clustering_coefficient[global_index] = torch.load(os.path.join(clustering_coefficient_dir_path, file.replace('edge_index', 'clustering_coefficient')))
+
+            betweenness_centrality = torch.zeros(229580)
+            betweenness_centrality[global_index] = torch.load(os.path.join(betweenness_centrality_dir_path, file.replace('edge_index', 'betweenness_centrality')))
+
             bidirectional_links_ratio = torch.zeros(229580)
             bidirectional_links_ratio[global_index] = torch.load(os.path.join(bidirectional_links_ratio_dir_path, file.replace('edge_index', 'bidirectional_links_ratio')))
             exist_nodes = torch.zeros(229580)
@@ -177,6 +199,7 @@ def generate_pyg_graph_for_all_snapshot():
                          edge_type=edge_type,
                          exist_nodes=exist_nodes,
                          clustering_coefficient=clustering_coefficient.reshape(-1, 1),
+                         betweenness_centrality = betweenness_centrality.reshape(-1,1),
                          bidirectional_links_ratio=bidirectional_links_ratio.reshape(-1, 1),
                          n_id=torch.arange(229580))
             torch.save(graph, file_path)
@@ -203,8 +226,19 @@ def generate_graph_data():
     delete_temp_data()
     print("delete_temp_data finished")
 
+def train_val_test_mask():
+    train_idx=torch.tensor(list(range(8278)),dtype=torch.long)
+    val_idx=torch.tensor(list(range(8278,8278+2365)),dtype=torch.long)
+    test_idx=torch.tensor(list(range(8278+2365,8278+2365+1183)),dtype=torch.long)
+        
+    return train_idx,val_idx,test_idx
 
 if __name__ == '__main__':
-    split_user_from_node()
-    generate_global_index()
+
+    train_idx,val_idx,test_idx = train_val_test_mask()
+    torch.save(train_idx,'./processed_data/train_idx.pt')
+    torch.save(val_idx,'./processed_data/val_idx.pt')
+    torch.save(test_idx,'./processed_data/test_idx.pt')
+    # split_user_from_node()
+    # generate_global_index()
     generate_graph_data()
