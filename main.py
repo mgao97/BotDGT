@@ -109,7 +109,9 @@ class Trainer:
         all_label = torch.cat(all_label, dim=1)
         all_exist_nodes = torch.cat(all_exist_nodes, dim=1)
         metrics = compute_metrics_one_snapshot(all_label[-1], all_output[-1], exist_nodes=all_exist_nodes[-1])
-        for key in ['accuracy', 'precision', 'recall', 'f1']:
+
+        print('metrics:',metrics)
+        for key in ['accuracy', 'precision', 'recall', 'f1', 'aucpr', 'aucroc']:
             plog += ' {}: {:.6}'.format(key, metrics[key])
         plog = 'Epoch-{} train loss: {:.6}'.format(current_epoch, total_loss) + plog
         print(plog)
@@ -122,7 +124,7 @@ class Trainer:
         metrics = self.forward_one_epoch(self.val_right, self.val_n_id, self.val_edge_index, self.val_exist_nodes,
                                          self.val_clustering_coefficient, self.val_bidirectional_links_ratio)
         plog = ""
-        for key in ['accuracy', 'precision', 'recall', 'f1']:
+        for key in ['accuracy', 'precision', 'recall', 'f1', 'aucpr', 'aucroc']:
             plog += ' {}: {:.6}'.format(key, metrics[key])
         plog = 'Epoch-{} val loss: {:.6}'.format(current_epoch, metrics['loss']) + plog
         print(plog)
@@ -135,7 +137,7 @@ class Trainer:
         metrics = self.forward_one_epoch(self.test_right, self.test_n_id, self.test_edge_index, self.test_exist_nodes,
                                          self.test_clustering_coefficient, self.test_bidirectional_links_ratio)
         plog = ""
-        for key in ['accuracy', 'precision', 'recall', 'f1']:
+        for key in ['accuracy', 'precision', 'recall', 'f1','aucpr','aucroc']:
             plog += ' {}: {:.6}'.format(key, metrics[key])
         plog = 'Last Epoch test loss: {:.6}'.format(metrics['loss']) + plog
         print(plog)
@@ -155,7 +157,7 @@ class Trainer:
                                              self.test_exist_nodes, self.test_clustering_coefficient,
                                              self.test_bidirectional_links_ratio)
             plog = ""
-            for key in ['accuracy', 'precision', 'recall', 'f1']:
+            for key in ['accuracy', 'precision', 'recall', 'f1', 'aucpr', 'aucroc']:
                 plog += ' {}: {:.6}'.format(key, metrics[key])
             plog = 'Epoch-{} test loss: {:.6}'.format(epoch, metrics['loss']) + plog
             print(plog)
