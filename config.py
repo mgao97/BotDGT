@@ -3,8 +3,9 @@ import argparse
 
 def parse_train_args(parser):
     parser.add_argument('--dataset_name', type=str, default='Twibot-20', help='dataset name')
-    parser.add_argument('--seed', type=int, default=1234)
-    parser.add_argument('--device', type=str, default='cuda:0', help='Device')
+    parser.add_argument('--seed', type=int, default=3417)
+    # parser.add_argument('--device', type=str, default='cuda:0', help='Device')
+    parser.add_argument('--device', type=str, default='cpu', help='Device')
     parser.add_argument('--interval', type=str, default='year', help='Interval of snapshots')
     parser.add_argument("--early_stop", action='store_true', help="whether to use early stop or not")
     parser.add_argument('--patience', type=int, default=10, help='Patience')
