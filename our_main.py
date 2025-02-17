@@ -16,7 +16,7 @@ print(project_root)
 
 # 将项目根目录添加到系统路径
 sys.path.append(project_root)
-sys.path.append(os.path.join(project_root, "New/SLATE/slate"))
+sys.path.append(os.path.join(project_root, "slate"))
 
 from our_model import OurModel
 
